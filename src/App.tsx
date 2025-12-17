@@ -10,6 +10,7 @@ import Verify from "./pages/Verify";
 import Assessment from "./pages/Assessment";
 import Recruiters from "./pages/Recruiters";
 import NotFound from "./pages/NotFound";
+import { AIAssistant } from "./components/AIAssistant";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/recruiters" element={<Recruiters />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <AIAssistant />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
