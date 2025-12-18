@@ -9,7 +9,7 @@ type Message = {
   content: string;
 };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
+const CHAT_URL = `${(import.meta.env.VITE_API_URL as string | undefined) || '/api/v1'}/ai-chat`;
 
 export const AIAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -42,14 +42,22 @@ export const AIAssistant = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get response');
+        const text = await response.text().catch(() => '');
+        let message = 'Failed to get response';
+        if (text) {
+          try {
+            const parsed = JSON.parse(text);
+            message = parsed?.error || parsed?.message || message;
+          } catch {
+            message = text;
+          }
+        }
+        throw new Error(message);
       }
 
       if (!response.body) throw new Error('No response body');

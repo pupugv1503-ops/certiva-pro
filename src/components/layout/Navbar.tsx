@@ -71,11 +71,11 @@ export const Navbar = () => {
 
           {/* CTA Buttons */}
           <div className="hidden lg:flex items-center gap-3">
-            <Button variant="ghost" className="text-muted-foreground">
-              Sign In
+            <Button variant="ghost" className="text-muted-foreground" asChild>
+              <Link to="/auth">Sign In</Link>
             </Button>
-            <Button variant="gradient">
-              Get Started
+            <Button variant="gradient" asChild>
+              <Link to="/auth">Get Started</Link>
             </Button>
           </div>
 
@@ -120,8 +120,12 @@ export const Navbar = () => {
                 </motion.div>
               ))}
               <div className="pt-4 space-y-2 border-t border-border/50">
-                <Button variant="outline" className="w-full">Sign In</Button>
-                <Button variant="gradient" className="w-full">Get Started</Button>
+                <Button variant="outline" className="w-full" asChild>
+                  <Link to="/auth" onClick={() => setIsOpen(false)}>Sign In</Link>
+                </Button>
+                <Button variant="gradient" className="w-full" asChild>
+                  <Link to="/auth" onClick={() => setIsOpen(false)}>Get Started</Link>
+                </Button>
               </div>
             </div>
           </motion.div>

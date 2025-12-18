@@ -61,6 +61,31 @@ const Assessment = () => {
   const [isProctoring, setIsProctoring] = useState(true);
   const [showResult, setShowResult] = useState(false);
 
+  const downloadCertificate = async (score: number) => {
+    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || "/api/v1";
+    const certificateId = `SC-${new Date().getFullYear()}-REACT-89472`;
+    const issueDate = new Date().toISOString().slice(0, 10);
+
+    const url = new URL(`${apiBase}/certificates/${encodeURIComponent(certificateId)}/download`);
+    url.searchParams.set("holderName", "Certificate Holder");
+    url.searchParams.set("title", "Advanced React Development");
+    url.searchParams.set("score", String(score));
+    url.searchParams.set("issueDate", issueDate);
+
+    const res = await fetch(url.toString());
+    if (!res.ok) throw new Error("Failed to download certificate");
+
+    const blob = await res.blob();
+    const objectUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    a.download = `certiva-certificate-${certificateId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(objectUrl);
+  };
+
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
@@ -155,6 +180,15 @@ const Assessment = () => {
                   View Certificate
                 </Button>
               </Link>
+            )}
+            {passed && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => downloadCertificate(score)}
+              >
+                Download Certificate (PDF)
+              </Button>
             )}
             <Link to="/certifications">
               <Button variant="outline" className="w-full">

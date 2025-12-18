@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Verify from "./pages/Verify";
 import Assessment from "./pages/Assessment";
 import Recruiters from "./pages/Recruiters";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { AIAssistant } from "./components/AIAssistant";
 
@@ -17,20 +18,36 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/certifications" element={<Certifications />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/verify" element={<Verify />} />
-          <Route path="/assessment/:id" element={<Assessment />} />
-          <Route path="/recruiters" element={<Recruiters />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <AIAssistant />
-      </BrowserRouter>
+      <div className="relative min-h-screen">
+        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+          <video
+            className="h-full w-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+          >
+            <source src="/bg.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-background/70" />
+        </div>
+
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/certifications" element={<Certifications />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/verify" element={<Verify />} />
+            <Route path="/assessment/:id" element={<Assessment />} />
+            <Route path="/recruiters" element={<Recruiters />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <AIAssistant />
+        </BrowserRouter>
+      </div>
     </TooltipProvider>
   </QueryClientProvider>
 );

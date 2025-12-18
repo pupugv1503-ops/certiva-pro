@@ -48,7 +48,7 @@ const Verify = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-transparent">
       <Navbar />
       
       <main className="pt-24 pb-16">
