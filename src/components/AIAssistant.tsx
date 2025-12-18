@@ -9,7 +9,7 @@ type Message = {
   content: string;
 };
 
-const CHAT_URL = `${(import.meta.env.VITE_API_URL as string | undefined) || '/api/v1'}/ai-chat`;
+
 
 export const AIAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,79 +35,26 @@ export const AIAssistant = () => {
     setInput('');
     setIsLoading(true);
 
-    let assistantContent = '';
-
     try {
-      const response = await fetch(CHAT_URL, {
+      const token = localStorage.getItem('certiva_token');
+      const apiBase = "http://localhost:5000/api";
+      
+      const response = await fetch(`${apiBase}/ai/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ messages: [...messages, userMessage] }),
+        body: JSON.stringify({ message: userMessage.content }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const text = await response.text().catch(() => '');
-        let message = 'Failed to get response';
-        if (text) {
-          try {
-            const parsed = JSON.parse(text);
-            message = parsed?.error || parsed?.message || message;
-          } catch {
-            message = text;
-          }
-        }
-        throw new Error(message);
+        throw new Error(data.message || 'Failed to get response');
       }
 
-      if (!response.body) throw new Error('No response body');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      const updateAssistant = (content: string) => {
-        assistantContent = content;
-        setMessages(prev => {
-          const last = prev[prev.length - 1];
-          if (last?.role === 'assistant') {
-            return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content } : m));
-          }
-          return [...prev, { role: 'assistant', content }];
-        });
-      };
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-
-          if (line.endsWith('\r')) line = line.slice(0, -1);
-          if (line.startsWith(':') || line.trim() === '') continue;
-          if (!line.startsWith('data: ')) continue;
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === '[DONE]') break;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              assistantContent += content;
-              updateAssistant(assistantContent);
-            }
-          } catch {
-            buffer = line + '\n' + buffer;
-            break;
-          }
-        }
-      }
+      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
     } catch (error) {
       console.error('Chat error:', error);
       toast({
@@ -115,10 +62,8 @@ export const AIAssistant = () => {
         description: error instanceof Error ? error.message : 'Failed to send message',
         variant: 'destructive',
       });
-      // Remove the user message if we failed
-      if (!assistantContent) {
-        setMessages(prev => prev.slice(0, -1));
-      }
+      // Remove the user message if we failed? Or just keep it.
+      // Keeping it is fine.
     } finally {
       setIsLoading(false);
     }

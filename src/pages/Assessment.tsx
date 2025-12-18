@@ -14,7 +14,7 @@ import {
   Brain,
   ArrowLeft
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 const mockQuestions = [
   {
@@ -61,29 +61,61 @@ const Assessment = () => {
   const [isProctoring, setIsProctoring] = useState(true);
   const [showResult, setShowResult] = useState(false);
 
-  const downloadCertificate = async (score: number) => {
-    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || "/api/v1";
-    const certificateId = `SC-${new Date().getFullYear()}-REACT-89472`;
-    const issueDate = new Date().toISOString().slice(0, 10);
+  // Add useParams
+  const { id: courseId } = useParams(); 
+  const [certId, setCertId] = useState<string | null>(null);
 
-    const url = new URL(`${apiBase}/certificates/${encodeURIComponent(certificateId)}/download`);
-    url.searchParams.set("holderName", "Certificate Holder");
-    url.searchParams.set("title", "Advanced React Development");
-    url.searchParams.set("score", String(score));
-    url.searchParams.set("issueDate", issueDate);
+  const submitAssessmentToBackend = async (finalScore: number) => {
+    try {
+      const token = localStorage.getItem("certiva_token");
+      const apiBase = "http://localhost:5000/api";
+      
+      // Submit score
+      await fetch(`${apiBase}/courses/${courseId}/assessment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ score: finalScore }),
+      });
 
-    const res = await fetch(url.toString());
-    if (!res.ok) throw new Error("Failed to download certificate");
+      if (finalScore >= 70) {
+        // Generate Certificate
+        const res = await fetch(`${apiBase}/certificates/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ courseId }),
+        });
+        const data = await res.json();
+        if (data._id) {
+          setCertId(data._id);
+        }
+      }
+    } catch (error) {
+       console.error("Failed to submit assessment", error);
+    }
+  };
 
-    const blob = await res.blob();
-    const objectUrl = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = objectUrl;
-    a.download = `certiva-certificate-${certificateId}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(objectUrl);
+  const downloadCertificate = async () => {
+    if (!certId) return;
+    const token = localStorage.getItem("certiva_token");
+    const apiBase = "http://localhost:5000/api";
+    
+    try {
+      const res = await fetch(`${apiBase}/certificates/${certId}/download`, {
+         headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Download failed");
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `certificate-${certId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   useEffect(() => {
@@ -100,6 +132,7 @@ const Assessment = () => {
     return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // Update handleNext to call submit
   const handleNext = () => {
     const newAnswers = [...answers];
     newAnswers[currentQuestion] = selectedAnswer;
@@ -109,6 +142,13 @@ const Assessment = () => {
       setCurrentQuestion(currentQuestion + 1);
       setSelectedAnswer(answers[currentQuestion + 1] ?? null);
     } else {
+      // Calculate score and show result
+      const correctAnswers = newAnswers.filter(
+        (answer, index) => answer === mockQuestions[index].correctAnswer
+      ).length;
+      const score = Math.round((correctAnswers / mockQuestions.length) * 100);
+      
+      submitAssessmentToBackend(score);
       setShowResult(true);
     }
   };
@@ -185,7 +225,7 @@ const Assessment = () => {
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => downloadCertificate(score)}
+                onClick={() => downloadCertificate()}
               >
                 Download Certificate (PDF)
               </Button>

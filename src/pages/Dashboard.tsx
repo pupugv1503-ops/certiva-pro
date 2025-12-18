@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,47 @@ const recommendedCerts = [
 ];
 
 const Dashboard = () => {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("certiva_token");
+        const apiBase = "http://localhost:5000/api";
+        const res = await fetch(`${apiBase}/users/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  const userStats = {
+    totalCertifications: 0, // Calculate from completed courses if available
+    inProgress: user?.enrolledCourses?.length || 0,
+    skillScore: 0, // Placeholder
+    streak: 0, // Placeholder
+  };
+
   return (
     <div className="min-h-screen bg-transparent">
       <Navbar />
@@ -80,7 +122,7 @@ const Dashboard = () => {
             className="mb-8"
           >
             <h1 className="text-3xl md:text-4xl font-bold mb-2">
-              Welcome back, <span className="gradient-text">Alex</span>
+              Welcome back, <span className="gradient-text">{user?.name || "Student"}</span>
             </h1>
             <p className="text-muted-foreground">
               Track your progress and continue building your skills.
@@ -126,31 +168,28 @@ const Dashboard = () => {
                 </div>
 
                 <div className="space-y-4">
-                  {recentCertifications.map((cert) => (
-                    <div key={cert.id} className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                      <img src={cert.badge} alt="" className="w-12 h-12 rounded-lg" />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium truncate">{cert.title}</h3>
-                        {cert.status === "completed" ? (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <CheckCircle className="h-4 w-4 text-success" />
-                            Completed on {cert.date} • Score: {cert.score}%
-                          </div>
-                        ) : (
+                  {user?.enrolledCourses && user.enrolledCourses.length > 0 ? (
+                    user.enrolledCourses.map((enrolled: any) => (
+                      <div key={enrolled._id} className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                        <img src={`/placeholder.svg`} alt="" className="w-12 h-12 rounded-lg" />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium truncate">{enrolled.course?.title || "Unknown Course"}</h3>
                           <div className="flex items-center gap-3">
-                            <Progress value={cert.progress} className="h-2 flex-1" />
-                            <span className="text-sm text-muted-foreground">{cert.progress}%</span>
+                            <Progress value={enrolled.progress} className="h-2 flex-1" />
+                            <span className="text-sm text-muted-foreground">{enrolled.progress}%</span>
                           </div>
-                        )}
-                      </div>
-                      {cert.status === "in-progress" && (
+                        </div>
                         <Button variant="gradient" size="sm">
                           <Play className="h-4 w-4 mr-1" />
                           Continue
                         </Button>
-                      )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center p-8 text-muted-foreground">
+                      No courses in progress. <Link to="/certifications" className="text-primary hover:underline">Start learning!</Link>
                     </div>
-                  ))}
+                  )}
                 </div>
               </motion.div>
 

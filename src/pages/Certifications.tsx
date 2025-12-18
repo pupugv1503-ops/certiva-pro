@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/landing/Footer";
@@ -103,11 +103,31 @@ const certifications = [
 const Certifications = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredCertifications = certifications.filter((cert) => {
-    const matchesCategory = selectedCategory === "all" || cert.category === selectedCategory;
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const apiBase = "http://localhost:5000/api";
+        const res = await fetch(`${apiBase}/courses`);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+           setCourses(data);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  const filteredCertifications = courses.filter((cert) => {
+    const matchesCategory = selectedCategory === "all" || (cert.tags && cert.tags.includes(selectedCategory));
     const matchesSearch = cert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cert.skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()));
+       (cert.tags && cert.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase())));
     return matchesCategory && matchesSearch;
   });
 
@@ -179,53 +199,48 @@ const Certifications = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCertifications.map((cert, index) => (
               <motion.div
-                key={cert.id}
+                key={cert._id}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <Link to={`/assessment/${cert.id}`}>
+                <Link to={`/assessment/${cert._id}`}>
                   <div className="glass-card rounded-2xl overflow-hidden group hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 cursor-pointer">
                     {/* Gradient header */}
-                    <div className={`h-2 bg-gradient-to-r ${cert.gradient}`} />
+                    <div className={`h-2 bg-gradient-to-r from-blue-500 to-cyan-500`} />
                     
                     <div className="p-6">
                       {/* Level badge */}
                       <Badge variant="secondary" className="mb-4">
-                        {cert.level}
+                        {cert.level || 'Beginner'}
                       </Badge>
 
                       <h3 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">
                         {cert.title}
                       </h3>
 
-                      {/* Skills */}
+                      {/* Skills/Tags */}
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {cert.skills.slice(0, 3).map((skill) => (
-                          <Badge key={skill} variant="outline" className="text-xs">
-                            {skill}
+                        {cert.tags && cert.tags.slice(0, 3).map((tag: string) => (
+                          <Badge key={tag} variant="outline" className="text-xs">
+                            {tag}
                           </Badge>
                         ))}
-                        {cert.skills.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{cert.skills.length - 3}
-                          </Badge>
-                        )}
                       </div>
 
                       {/* Stats */}
                       <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
-                          {cert.duration}
+                          {cert.duration || 10}h
                         </div>
                         <div className="flex items-center gap-1">
                           <Users className="h-4 w-4" />
-                          {cert.enrolled.toLocaleString()}
+                          {(cert.enrolled || 0).toLocaleString()}
                         </div>
                         <div className="flex items-center gap-1">
                           <Star className="h-4 w-4 fill-warning text-warning" />
-                          {cert.rating}
+                          {cert.rating || 4.5}
                         </div>
                       </div>
 

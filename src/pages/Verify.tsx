@@ -38,13 +38,35 @@ const Verify = () => {
     if (!certificateId.trim()) return;
     
     setIsSearching(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Mock: Show result for any input
-    setResult(mockCertificate);
-    setSearched(true);
-    setIsSearching(false);
+    setSearched(false);
+    setResult(null);
+
+    try {
+      const apiBase = "http://localhost:5000/api";
+      const res = await fetch(`${apiBase}/certificates/verify/${certificateId.trim()}`);
+      const data = await res.json();
+
+      if (data.valid) {
+        setResult({
+          id: data.certificate.uniqueId,
+          holder: data.certificate.user.name,
+          title: data.certificate.course.title,
+          issueDate: new Date(data.certificate.issueDate).toLocaleDateString(),
+          expiryDate: "Life-time", // or calculate
+          score: 100, // placeholder
+          skills: [], // placeholder
+          status: "valid",
+        });
+      } else {
+        // Show invalid message?
+        // For now just empty result implies invalid or handled via toast
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSearching(false);
+      setSearched(true);
+    }
   };
 
   return (

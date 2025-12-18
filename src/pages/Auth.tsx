@@ -13,13 +13,17 @@ const Auth = () => {
   const { toast } = useToast();
 
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const canSubmit = useMemo(() => {
+    if (mode === "signup") {
+      return name.trim().length > 0 && email.trim().length > 0 && password.length >= 6;
+    }
     return email.trim().length > 0 && password.length >= 6;
-  }, [email, password]);
+  }, [mode, name, email, password]);
 
   const getAuthErrorMessage = (message?: string) => {
     const msg = (message || "").toLowerCase();
@@ -27,19 +31,17 @@ const Auth = () => {
     if (msg.includes("failed to fetch") || msg.includes("networkerror")) {
       return "Backend is not reachable. Start the backend server on http://localhost:5000.";
     }
-    if (msg.includes("invalid login credentials")) return "Invalid email or password.";
-    if (msg.includes("email not confirmed")) return "Please confirm your email first, then sign in.";
-    if (msg.includes("user already registered") || msg.includes("already exists")) {
+    if (msg.includes("invalid email or password")) return "Invalid email or password.";
+    if (msg.includes("user already exists")) {
       return "An account with this email already exists. Try signing in.";
     }
-    if (msg.includes("password") && msg.includes("6")) return "Password must be at least 6 characters.";
     return message || "Please try again.";
   };
 
   const onSubmit = async () => {
     if (!canSubmit || loading) return;
 
-    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || "/api/v1";
+    const apiBase = "http://localhost:5000/api";
 
     setLoading(true);
     try {
@@ -53,6 +55,7 @@ const Auth = () => {
         if (!res.ok) throw new Error(data?.message || "Invalid email or password.");
 
         if (data?.token) localStorage.setItem("certiva_token", data.token);
+        if (data?.name) localStorage.setItem("certiva_user_name", data.name);
 
         toast({
           title: "Signed in",
@@ -62,20 +65,23 @@ const Auth = () => {
         return;
       }
 
-      const res = await fetch(`${apiBase}/auth/signup`, {
+      // Signup
+      const res = await fetch(`${apiBase}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.message || "Unable to create account.");
 
       if (data?.token) localStorage.setItem("certiva_token", data.token);
+      if (data?.name) localStorage.setItem("certiva_user_name", data.name);
 
       toast({
         title: "Account created",
-        description: "Your account is ready. You can sign in now.",
+        description: "Your account is ready.",
       });
+      navigate("/dashboard");
     } catch (e: any) {
       toast({
         title: "Authentication failed",
@@ -146,6 +152,17 @@ const Auth = () => {
 
               <TabsContent value="signup" className="mt-6">
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name-signup">Full Name</Label>
+                    <Input
+                      id="name-signup"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="John Doe"
+                      autoComplete="name"
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="email-signup">Email</Label>
                     <Input

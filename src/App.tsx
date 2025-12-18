@@ -12,6 +12,7 @@ import Recruiters from "./pages/Recruiters";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { AIAssistant } from "./components/AIAssistant";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -38,11 +39,15 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/certifications" element={<Certifications />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/verify" element={<Verify />} />
-            <Route path="/assessment/:id" element={<Assessment />} />
-            <Route path="/recruiters" element={<Recruiters />} />
+            
+            <Route element={<ProtectedRoute />}>
+              <Route path="/certifications" element={<Certifications />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/verify" element={<Verify />} />
+              <Route path="/assessment/:id" element={<Assessment />} />
+              <Route path="/recruiters" element={<Recruiters />} />
+            </Route>
+
             <Route path="*" element={<NotFound />} />
           </Routes>
           <AIAssistant />

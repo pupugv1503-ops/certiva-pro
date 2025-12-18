@@ -8,7 +8,7 @@ export type JwtPayload = {
 export const signToken = (payload: JwtPayload) => {
   const secret = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
   const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
-  return jwt.sign(payload, secret, { expiresIn });
+  return jwt.sign(payload, secret as jwt.Secret, { expiresIn: expiresIn as any });
 };
 
 export const verifyToken = (token: string): JwtPayload => {
